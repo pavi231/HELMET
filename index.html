@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Helmet Safety</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="hero">
+            <nav>
+                <ul>
+                    <li><a href="#why">WHY WEAR</a></li>
+                    <li><a href="#stats">STATS</a></li>
+                    <li><a href="#tips">TIPS</a></li>
+                </ul>
+            </nav>
+            <div class="hero-content">
+                <h1><i class="fas fa-shield-alt"></i>WAY TO GO</h1>
+                <p>PROTECT YOUR HEAD, SAVE YOUR LIFE</p>
+                <a href="#why" class="cta-button pulse">LEARN MORE</a>
+            </div>
+        </header>
+
+        <section id="why" class="section fade-in">
+            <div class="content">
+                <h2>WHY WEAR A HELMET?</h2>
+                <div class="why-grid">
+                    <div class="text-box">
+                        <p>Helmets are your first line of defense against head injuries. They reduce the risk of serious brain trauma and can be the difference between life and death.</p>
+                        <button id="startDetectionBtn" class="pulse">START HELMET DETECTION</button>
+                        <button id="stopDetectionBtn" class="stop-btn" style="display: none;">STOP DETECTION</button>
+                        <div id="status" style="margin-top: 1rem; font-weight: bold;"></div>
+                    </div>
+                    <div class="image-box">
+                        <img id="videoFeed" src="" alt="Helmet Detection" style="width: 100%; display: none;">
+                        <div id="placeholder" style="text-align: center; padding: 2rem;">CLICK "START HELMET DETECTION" TO BEGIN</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="stats" class="section fade-in">
+            <div class="content">
+                <h2>SAFETY STATISTICS</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="number">85%</span>
+                        <p>REDUCTION IN HEAD INJURIES</p>
+                    </div>
+                    <div class="stat-card">
+                        <span class="number">70%</span>
+                        <p>DECREASE IN BRAIN INJURIES</p>
+                    </div>
+                    <div class="stat-card">
+                        <span class="number">100%</span>
+                        <p>PEACE OF MIND</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tips" class="section fade-in">
+            <div class="content">
+                <h2>HELMET SAFETY TIPS</h2>
+                <ul id="tips-list">
+                    <li>WEAR IT PROPERLY FITTED</li>
+                    <li>CHECK FOR DAMAGE REGULARLY</li>
+                    <li>REPLACE AFTER ANY IMPACT</li>
+                </ul>
+                <button id="addTipBtn" class="pulse">ADD YOUR TIP</button>
+            </div>
+        </section>
+
+        <footer>
+            <p>© 2025 WAY TO GO | <i class="fas fa-helmet-safety"></i> RIDE SAFE!</p>
+        </footer>
+    </div>
+
+    <script>
+        document.getElementById('addTipBtn').addEventListener('click', function() {
+            const tip = prompt('Enter your helmet safety tip:');
+            if (tip) {
+                const listItem = document.createElement('li');
+                listItem.textContent = tip;
+                listItem.style.opacity = '0';
+                document.getElementById('tips-list').appendChild(listItem);
+                setTimeout(() => {
+                    listItem.style.transition = 'opacity 0.5s ease';
+                    listItem.style.opacity = '1';
+                }, 100);
+            }
+        });
+
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const sectionId = this.getAttribute('href');
+                document.querySelector(sectionId).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        const sections = document.querySelectorAll('.fade-in');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animationDelay = '0.2s';
+                }
+            });
+        }, { threshold: 0.1 });
+        sections.forEach(section => observer.observe(section));
+
+        // Start detection button handler
+        $('#startDetectionBtn').click(function() {
+            $.post('/start_detection', function(data) {
+                if (data.status === 'started') {
+                    $('#videoFeed').attr('src', '/video_feed?' + new Date().getTime());
+                    $('#videoFeed').show();
+                    $('#placeholder').hide();
+                    $('#startDetectionBtn').hide();
+                    $('#stopDetectionBtn').show();
+                    startStatusCheck();
+                } else {
+                    alert('Detection is already running');
+                }
+            });
+        });
+
+        // Stop detection button handler
+        $('#stopDetectionBtn').click(function() {
+            $.post('/stop_detection', function(data) {
+                if (data.status === 'stopped') {
+                    $('#videoFeed').attr('src', '').hide();
+                    $('#placeholder').show();
+                    $('#stopDetectionBtn').hide();
+                    $('#startDetectionBtn').show();
+                    $('#status').text('Detection Stopped').css('color', '#666');
+                    clearInterval(window.statusInterval);
+                } else {
+                    alert('Detection is already stopped');
+                }
+            });
+        });
+
+        function checkStatus() {
+            $.get('/status', function(data) {
+                if (data.helmet_detected) {
+                    $('#status').text('Helmet Detected ✓').css('color', '#00cc00');
+                } else {
+                    $('#status').text('No Helmet Detected ⚠').css('color', '#ff0000');
+                }
+            });
+        }
+
+        function startStatusCheck() {
+            if (window.statusInterval) clearInterval(window.statusInterval);
+            window.statusInterval = setInterval(checkStatus, 1000);
+            checkStatus();
+        }
+    </script>
+</body>
+</html>
